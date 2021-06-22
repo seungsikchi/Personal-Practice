@@ -1,112 +1,125 @@
-import numpy as np
-import tensorflow as tf
+#globalPath에 현제 실행시킬 환경에 데이터가 저장되어 있는 위치를 입력
+
+
 from PIL import Image
-import matplotlib.pyplot as plt
-import os 
-import cv2
-from sklearn.model_selection import train_test_split
+import os
+from glob import glob
+import numpy as np
+from sklearn.utils import shuffle
 
-Hippo = []
-Penguin = []
-Giraffe = []
-Panda = []
-Elephant = []
-Y = []
-
-
-# def normalize(x):
-#   return (x-np.min(x))/(np.max(x)-np.min(x))
-
-
-img_dir = ("C:/code/dataset/zoodata/1")
-img_list = os.listdir(img_dir)
-for i in range(1,131):
-    image_file = "/code/dataset/zoodata/1/img_%d_resize.jpeg"%i
-    image = cv2.imread(image_file)
-#     no_X = normalize(image)
-    Hippo.append(image)
-    Hippo_np = np.array(Hippo)
-    Y.append(1)
+class dataSet():
     
-img_dir = ("C:/code/dataset/zoodata/2")
-img_list = os.listdir(img_dir)
-for i in range(1,131):
-    image_file = "/code/dataset/zoodata/2/img_%d_resize.jpeg"%i
-    image = cv2.imread(image_file)
-#     no_X = normalize(image)
-    Penguin.append(image) 
-    Penguin_np = np.array(Penguin)
-    Y.append(2)   
-for i in range(1,131):  
-    image_file = "/code/dataset/zoodata/3/img_%d_resize.jpeg"%i 
-    image = cv2.imread(image_file)
-#     no_X = normalize(image)
-    Giraffe.append(image)
-    Giraffe_np = np.array(Giraffe)
-    Y.append(3)
+    #초기함수
+    def __init__(self, globalPath):
+        self.globalPath = globalPath
+        self.x = []
+        self.y = []
+
+        #in splitData
+        self.train_x = []
+        self.train_y = []
+        self.test_x = []
+        self.test_y = []
     
-img_dir = ("C:/code/dataset/zoodata/4")
-img_list = os.listdir(img_dir)
-for i in range(1,131):
-    image_file = "/code/dataset/zoodata/4/img_%d_resize.jpeg"%i
-    image = cv2.imread(image_file)
-#     no_X = normalize(image)
-    Panda.append(image)
-    Panda_np = np.array(Panda)
-    Y.append(4)
+    #이미지를 불러오는 함수 (path = 지금 현재 데이터가 저장되어 있는 파일 주소)
+    def imageRead(self, path):
+        x = Image.open(path)
+        y = path.split('\\')[-2]
+        #.\\dataset\\1\\1.jpg
+        # print(x,y)
+        return x, int(y)-1
 
+    #실제로 모든 데이터를 읽어들이는 함수
+    def getFilesInFolder(self, path):
+        #모든 경로들을 다 가져와서 result에 넣음
+        result = [ y for x in os.walk(path) for y in glob(os.path.join(x[0], '*.*'))]
+        # print(result)
 
+        for localPath in result:
+            img, target = self.imageRead(localPath)
+            self.x.append(img)
+            self.y.append(target)
+        # print(len(self.x), len(self.y))
+        return self.x, self.y
     
-img_dir = ("C:/code/dataset/zoodata/5")
-img_list = os.listdir(img_dir)
-for i in range(1,131):
-    image_file = "/code/dataset/zoodata/5/img_%d_resize.jpeg"%i
-    image = cv2.imread(image_file)
-#     no_X = normalize(image)
-    Elephant.append(image)
-    Elephant_np = np.array(Elephant)
-    Y.append(5)
+    #이전에 설정한 dim값으로 데이터 전체를 사이즈를 변환함
+    def resizeAll(self, X, Y, dim):
+        
+        resizedX = []
+        resizedY = []
 
-# print(giraffe)
-# print(panda)
-# print(a)
-print(Hippo_np.shape)
-print(Penguin_np.shape)
-print(Giraffe_np.shape)
-print(Panda_np.shape)
-print(Elephant_np.shape)
-           
+        N = len(X)
+
+        for i in range(N):
+            resized = X[i].resize((dim, dim))
+            npImg = np.array(resized)
+
+            if len(npImg.shape) == 3:
+                resizedX.append(npImg)
+                resizedY.append(Y[i])
+           # print(npImg.shape)
+        
+        self.x = np.array(resizedX)
+        self.y = np.array(resizedY)
+        self.y = np.reshape(self.y, (-1, 1))
+        #print(self.x.shape, self.y.shape)
     
-BeforeExtraction_X = np.concatenate((Hippo_np,Penguin_np,Giraffe_np,Panda_np,Elephant_np), axis = 0)
-BeforeExtraction_Y = np.array(Y)
+    #학습데이터랑 테스트데이터로 나누는 함수
+    def splitDataset(self, ratio):
+        train_idx = int(len(self.x) * ratio)
+        print(train_idx)
+        self.train_x, self.train_y = self.x[:train_idx, :, :, :], self.y[:train_idx, :]
+
+        self.test_x, self.test_y = self.x[train_idx:, :, :, :], self.y[train_idx:, :]
+
+        return self.train_x, self.train_y, self.test_x, self.test_y
+    
+    
+    #데이터를 섞는 함수
+    def shuffleData(self, x, y):
+        x = np.array(x)
+        y = np.array(y)
+        x, y = shuffle(x, y)
+        return x, y
+
+    #정규화 함수
+    def normZT(self, x):
+        x = (x - np.mean(x) / np.std(x))
+        return x
+    
+    #MinMax정규화 함수
+    def normMinMax(self, x):
+        x = (x - np.min(x)) / (np.max(x) - np.min(x))
+        return x
+
+    #위에 함수들을 다 실행시키는 함수
+    def load_data(self, dim, ratio):
+        self.getFilesInFolder(self.globalPath) #전체 데이터 가져옴
+        self.resizeAll(self.x, self.y, dim) # numpy화 되어 있음
+        self.x, self.y = self.shuffleData(self.x, self.y) #데이터 섞기
+        self.splitDataset(ratio) #훈련용, 시험용으로 쪼개기
+        self.train_x = self.normZT(self.train_x) #train 정규화
+        self.test_x = self.normZT(self.test_x) #test 정규화
+
+        return self.train_x, self.train_y, self.test_x, self.test_y
 
 
-train_X, test_X, train_Y, test_Y = train_test_split(BeforeExtraction_X, BeforeExtraction_Y, test_size = 0.3)
 
-# x_mean = train_X.mean()
-# x_std = train_X.std() 
-# train_X = (train_X - x_mean) / x_std
-# test_X = (test_X - x_mean) / x_std
+globalPath = 'C:\\code\\dataset\\anmals\\'
+ds = dataSet(globalPath)
+train_x, train_y, test_x, test_y = ds.load_data(64, 0.8)
 
-print(test_X)
-train_X = train_X / 255.0
-test_X = test_X / 255.0
-
-print(train_X)
-print(train_Y)
 
 model = tf.keras.Sequential([
   tf.keras.layers.Conv2D(input_shape = (128,128,3),kernel_size = (3,3), filters = 32, padding = 'same', activation = 'relu'),
   tf.keras.layers.Conv2D(kernel_size = (3,3), filters = 64, padding = 'same', activation = 'relu'),
   tf.keras.layers.MaxPool2D(pool_size = (2,2)),
-#   tf.keras.layers.Dropout(rate = 0.5),
   tf.keras.layers.Conv2D(kernel_size = (3,3), filters = 128, padding = 'same', activation = 'relu'),
   tf.keras.layers.Conv2D(kernel_size = (3,3), filters = 256, padding = 'valid', activation = 'relu'),
   tf.keras.layers.MaxPool2D(pool_size = (2,2)),
   tf.keras.layers.Dropout(rate = 0.5),
   tf.keras.layers.Flatten(),
   tf.keras.layers.Dense(units = 512, activation= 'relu'),
-#   tf.keras.layers.Dropout(rate = 0.5),
   tf.keras.layers.Dense(units = 256, activation= 'relu'),
   tf.keras.layers.Dropout(rate = 0.5),
   tf.keras.layers.Dense(units = 10, activation= 'softmax'),
