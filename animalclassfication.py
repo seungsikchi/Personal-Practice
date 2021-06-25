@@ -110,43 +110,46 @@ ds = dataSet(globalPath)
 train_x, train_y, test_x, test_y = ds.load_data(64, 0.8)
 
 
+
+#불러온 데이터를 convolution을 사용하여 특징을 추출하고 다시 디코딩하기
 model = tf.keras.Sequential([
-  tf.keras.layers.Conv2D(input_shape = (128,128,3),kernel_size = (3,3), filters = 32, padding = 'same', activation = 'relu'),
-  tf.keras.layers.Conv2D(kernel_size = (3,3), filters = 64, padding = 'same', activation = 'relu'),
-  tf.keras.layers.MaxPool2D(pool_size = (2,2)),
-  tf.keras.layers.Conv2D(kernel_size = (3,3), filters = 128, padding = 'same', activation = 'relu'),
-  tf.keras.layers.Conv2D(kernel_size = (3,3), filters = 256, padding = 'valid', activation = 'relu'),
-  tf.keras.layers.MaxPool2D(pool_size = (2,2)),
-  tf.keras.layers.Dropout(rate = 0.5),
-  tf.keras.layers.Flatten(),
-  tf.keras.layers.Dense(units = 512, activation= 'relu'),
-  tf.keras.layers.Dense(units = 256, activation= 'relu'),
-  tf.keras.layers.Dropout(rate = 0.5),
-  tf.keras.layers.Dense(units = 10, activation= 'softmax'),
+    tf.keras.layers.Conv2D(filters = 32, kernel_size = 2, strides=(2,2), activation = 'elu', input_shape = (64,64,3)),
+    tf.keras.layers.Conv2D(filters = 64, kernel_size = 2, strides=(2,2), activation = 'elu'),
+    tf.keras.layers.Conv2D(filters = 128, kernel_size = 2, strides=(2,2), activation = 'elu'),
+    tf.keras.layers.Flatten(),
+    tf.keras.layers.Dense(128, activation = 'elu'),
+    tf.keras.layers.Dense(64, activation = 'elu'),
+    tf.keras.layers.Dense(8*8*128, activation = 'elu'),
+    tf.keras.layers.Reshape(target_shape=(8,8,128)),
+    tf.keras.layers.Conv2DTranspose(filters=16, kernel_size=2, strides=(2,2), padding ='same', activation = 'elu'),
+    tf.keras.layers.Conv2DTranspose(filters=32, kernel_size=2, strides=(2,2), padding ='same', activation = 'elu'),
+    tf.keras.layers.Conv2DTranspose(filters=3, kernel_size=2, strides=(2,2), padding ='same', activation = 'sigmoid')
 ])
 
-model.compile(optimizer = tf.keras.optimizers.Adam(), loss = 'sparse_categorical_crossentropy', metrics = ['accuracy'])
-
+model.compile(optimizer =tf.optimizers.Adam(), loss= 'mse', metrics = ['accuracy'])
 model.summary()
 
-history = model.fit(train_X, train_Y, epochs = 50, validation_split = 0.2)
+print(train_x.shape)
+print(train_y.shape)
 
-import matplotlib.pyplot as plt
+#위에서 정의한 모델 학습
+history = model.fit(train_x, train_x, epochs=50, batch_size= 10)
 
-plt.figure(figsize = (12,4))
-plt.subplot(1,2,1)
-plt.plot(history.history['loss'], 'b-', label = 'loss')
-plt.plot(history.history['val_loss'], 'r--', label = 'val_loss')
-plt.xlabel('Epochs')
-plt.legend()
+#랜덤으로 불러와 위에서 디코딩이 잘 되었는지 확인
+import random
 
-plt.subplot(1,2,2)
-plt.plot(history.history['accuracy'], 'g-', label = 'accuracy')
-plt.plot(history.history['val_accuracy'], 'k--', label = 'val_accuracy')
-plt.xlabel('Epochs')
-plt.ylim(0.7, 1)
-plt.legend()
+plt.figure(figsize= (4,8))
+for c in range(4):
+  plt.subplot(4, 2, c*2+1)
+  rand_index = random.randint(0, train_x.shape[0])
+  plt.imshow(train_x[rand_index].reshape(64,64,3), cmap = 'gray')
+  plt.axis('off')
+
+  plt.subplot(4, 2, c*2+2)
+  img = model.predict(np.expand_dims(train_x[rand_index], axis=0))
+  plt.imshow(img.reshape(64, 64,3), cmap = 'gray')
+  plt.axis('off')
 
 plt.show()
 
-print(model.evaluate(test_X, test_Y, verbose = 0))
+model.evaluate(test_x, test_x)
