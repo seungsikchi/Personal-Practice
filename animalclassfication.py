@@ -153,3 +153,34 @@ for c in range(4):
 plt.show()
 
 model.evaluate(test_x, test_x)
+
+#latent_vector 추출하기 
+
+latent_vector_model = tf.keras.Model(inputs=model.input, outputs=model.layers[8].output)
+#latent 벡터 64개를 추출할 수 있음
+latent_vector = latent_vector_model.predict(train_x)
+# print(latent_vector.shape)
+# print(latent_vector[0])
+
+from sklearn.cluster import KMeans 
+
+kmeans=KMeans(n_clusters=5, n_init=10)
+kmeans.fit(latent_vector)
+
+#위에서 추출한 latent_vecotr를 사용해 TSNE 사용하기
+%time
+from sklearn.manifold import TSNE
+
+tsne = TSNE(n_components = 2, learning_rate = 150, perplexity = 15)
+print(latent_vector[:300].shape)
+tsne_vector = tsne.fit_transform(latent_vector[:300])
+
+cmap = plt.get_cmap('rainbow', 5)#10
+fig = plt.scatter(tsne_vector[:,0], tsne_vector[:,1], marker = '.', c=train_y[:300], cmap = cmap)
+cb = plt.colorbar(fig, ticks=range(5))
+n_clusters = 5
+tick_locs = (np.arange(n_clusters)+ 0.5)*(n_clusters-1)/n_clusters
+cb.set_ticks(tick_locs)
+cb.set_ticklabels(range(10))
+
+plt.show()
