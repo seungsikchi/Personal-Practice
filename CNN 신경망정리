@@ -1,3 +1,7 @@
+Classification은 이미지를 입력받아 이미지 하나에 대한 카테고리를 출력함 
+Localization, Detection은 이미지의 레이블을 예측하면서 그 물체가 어디에 있는지 정보를 제공. 물체가 있는곳에 네모를 그리거나 하는방법
+Segmentation은 이미지를 입력 받아 이미지의 픽셀을 구분해 픽셀에 대한 정보를 출력함
+
 ResNet
 네트워크가 점점 깊어질수록 Vanishing Gradient, Exploding Gradient와 같은 문제 발생 => 이를 해결하기위해서 residual(잔차)을 학습을하면 할수록 점점 더 좋은 결과를 나타내는것이 보임
 degradation 문제는 Overfitting이 원인이 아니라, Model의 depth가 깊어짐에 따라 training-error가 높아짐 => 깊이가 깊어지면서 점점 학습시간 증가 => 깊이는 줄이되 학습률이 높음
@@ -5,8 +9,6 @@ RseNet 구조
 단순한 CNN구조는 x를 받아 2개의 weighted layer를 거쳐 출력 H(x)를 내며 다음 layer의 입력으로 적용됨 그러나 ResNet은 layer의 입력을 layer의 출력에 바로 연결시키는 "skip connection"을 사용했다.
 
 (BN을하고 ReLU로 Convolution시키고 Maxpooling을 함)= 한사이클을 나온결과를 마지막에 출력값에 입력값을 더함 
-
-Q1.레이어 갯수가 적어질록 학습이 쉬워질까 오히려 Resiual 레이어떄문에 학습하는데 늦어지는것은 아닐까?
 
 VGGNet16
 3 x 3 conv filter를 고정해 기존 CNN모델의 layer의 갯수를 늘렸고 이것이 large-scale image recognition에서도 좋은 결과를 얻게 만들었다.
@@ -37,14 +39,37 @@ ReLU를 사용하며, Local Response Normalization(LRN)을 사용함, 연구를 
 Local Response Normalization ReLU는 양수의 방향으로는 입력의 값을 그대로 사용 그렇게 되면 convolution이나 pooling시 매우 높은 하나의 픽셀값이 주변의 픽셀에 영향을 미치게됨
 이런 부분을 방지하기 위해 다른 ActivationMap의 같은 위치에 있는 픽셀끼리 정규화를 하는것 
 
-Classification은 이미지를 입력받아 이미지 하나에 대한 카테고리를 출력함 
-Detection은 이미지를 입력받아 이미지의 위치를 찾아서 Boxing해서 출력함
-Segmentation은 이미지를 입력 받아 이미지의 픽셀을 구분해 픽셀에 대한 정보를 출력함
+Image Detection
+
+1. Region Proposal - 카테고리와 무관하게 물체의 영역을 찾는 모듈
+2. CNN - 각각의 영역으로부터 고정된 크기의 Feature Vector를 뽑아내는 Large Convolutional Neural Network
+3. SVM - Classification 을 위한 선형 지도학습 모델 Support Vector Machine(SVM)
+
+R-CNN
+알고리즘 순서
+1. 이미지를 input에 집어넣음 
+2. 2000개의 영역(bounding box)을 selective search 알고리즘을 통해 추출하여 잘라낸다 
+2-1. 이를 CNN모델에 넣기 위해 같은 사이즈(227x227 pixel size)로 찌그려뜨린다(Warping).
+3. 2000개의 Warped image를 각각 CNN 모델에 집어 넣는다.
+4. 각각 Classification을 진행하여 결과를 도출한다.
+
+R-CNN은 Region Proposal 단계에서 seletive search를 사용함 seletive search = 여러가지의 랜덤한 박스를 임의로 생성해놓고 합쳐서 점정 물체를 찾아나가는 방식
+그리고 seletive search를 통해서 생성된 2000개의 각각의 이미지를 CNN에 넣는다.
+마지막 SVM(Support vector machine)사용 왜냐하면 softmax를 사용했을 경우 mAP값이 54.2%애서 50.9%로 떨어짐
+bounding box regression => 임의로 생성된 box를 x, y좌표위치와 너비 높이등을 수정해서 변형하는것을 학습시키는것
+
+단점 
+1. 학습이 오래걸린다 => Region Proposal 에서 seletive search 한 이미지 2000개를 전부 CNN에 넣기때문에 오래 걸릴 수 밖에없다.
+2. 복잡하다 => CNN, SVM, Bounding box regression 까지 총 세가지 모델을 필요로 하는 매우 복잡한 구조를 가지고있다.
+3. Back propagation => 앞에서 말한 SVM과 Bounding box regression에서 학습한 결과가 CNN을 업데이트 하지 못한다.
 
 Segmentation은 semantic Segmentation과 Instance Segmentation으로 나뉨
 semantic Segmentation은 각각의 물체가 어떤 class인지만 구분함
+
+AlexNet, VGG등 분류에 자주 쓰이는 깊은 신경망들은 Semantic Segmentation을 하는데 적합하지 않음 왜냐하면 parameter의 개수와 차원을 줄이는 layer를 가지고 있어서 위치정보를 잃음
+Pooling과 Fully connected layer 를 없애고 stride가 1이고 padding도 일정한 Convolution을 진행해서 하면 가능은하나 parameter의 개수가 많아져서 메모리 문제나 계산하는데 비용이 너무많이듬
+
+FCN(Fully Convolutional Network)
+1 x 1 size Convolution layer(Convolutionalization)만 사용한것이 특징
+Fully Connect layer를 사용하기 위해서는 고정된 input size를 가질 수 밖에 없다 그리고 FC layer를 지나는 순간 각 pixel에 대해 위치정보는 소실된다. 따라서 FCN은 모든 Network를 Convolution layer만 사용함으로써 input size의 제한을 받지 않고 위치정보를 보전할 수 있게 만듬 
 Instance Segmentation은 같은 class일지라도 서로 다른 물체일 경우 구분함
-
-
-
-
