@@ -43,7 +43,8 @@ Image Detection
 
 1. Region Proposal - 카테고리와 무관하게 물체의 영역을 찾는 모듈
 2. CNN - 각각의 영역으로부터 고정된 크기의 Feature Vector를 뽑아내는 Large Convolutional Neural Network
-3. SVM - Classification 을 위한 선형 지도학습 모델 Support Vector Machine(SVM)
+3. SVM - Classification 을 위한 선형 지도학습 모델 Support Vector Machine(SVM) 기준선을 찾아서 그 기준선을 기준으로 나누는 방법
+4. RoI Pooling Layer - RoI 영역에 해당하는 부분만 max-pooling을 통해 feature map으로부터 고정된 길이의 저차원 백터로 축소하는 단계를 의미함 RoI = 정해진 비율이 따로 있음 인풋이미지의 크기와 피처맵의 크기가 다를경우 그비율을 구해서 RoI를 조정한다음 진행
 
 R-CNN
 알고리즘 순서
@@ -62,6 +63,36 @@ bounding box regression => 임의로 생성된 box를 x, y좌표위치와 너비
 1. 학습이 오래걸린다 => Region Proposal 에서 seletive search 한 이미지 2000개를 전부 CNN에 넣기때문에 오래 걸릴 수 밖에없다.
 2. 복잡하다 => CNN, SVM, Bounding box regression 까지 총 세가지 모델을 필요로 하는 매우 복잡한 구조를 가지고있다.
 3. Back propagation => 앞에서 말한 SVM과 Bounding box regression에서 학습한 결과가 CNN을 업데이트 하지 못한다.
+4.합성곱 신경망(conv)의 입력을 위한 고정된 크기를 위해 wraping/crop을 사용해야 되며, 그 과정에서 input 이미지 정보의 손실이 일어난다.
+
+Fast R-CNN
+CNN특징 추출 및 classification, bounding box regression을 모두 하나의 모델에서 학습시키고자 한 모델이다.
+알고리즘 순서
+1. 전체 이미지를 미리 학습된 CNN을 통과시켜 feature map을 추출한다.
+2.feature map에서 Rol(Region of Interest)들을 찾아준다. +)ROI들은 input 이미지에서 Selective Search를 통해 찾은것을 feature map에 적용한 것이다.
+3.(Selective Search를 통해 찾은) 각각의 RoI에 대해 RoI Pooling을 진행하여 고정된 크기의 백터를 추출한다.
+4.feature vector는 fully vector들을 통과한 후, softmax와 bounding box regression의 input으로 들어간다.
++)softmax는 SVM을 대신하는 방법으로, 해당RoI가 어던 물체인지를 classification한다. +)bounding box regression은 selective search로 찾은 박스의 위치를 조절한다.
+
+단점
+R-CNN 과 SPPNet에 비해 빠른 연산 속도와 정확도를 나타낼 수 있었으나 여전히 Region proposal을 selective search로 수행하여 Region proposal연산이 느리다는 단점이 있음
+
+yolo
+알고리즘 순서
+1. 입력이미지를 S X S 글디ㅗ 영역으로 나눠 준다.
+2.각각의 grid cell은 B개의 Bounding box와 각 Bounding box에 대한 confidence score를 갖는다(만약 cell에 object가 없다면 confidence score는 0이 된다.)confidence score는 이 시스템이 물체를 포함한다는 예측을 얼마나 확신하는지, 박스에 대하나 예측이 얼마나 정확할지를 의미함
+3.각각의 bounding box는 x,y,w,h와 confidence로 구성됨 이 값들을 모두 0~1 범위의 값으로 정규화함
+4.각각의 grid cell은 C(conditional class probability)를 갖는다. = class 개수를 받음
+5.평가할 때 conditional class probability와 각 박스의 class - specific confidence score를 주는 confidence prediction을 곱했다. 이점수는 class가 박스안에 존재하는지와 박스가 물체에 얼마나 적합한가를 모두 포함한다.
+특징
+1.이미지 전체를 한번만 보는 것이다. YOLO 이전의 R-CNN은 이미지를 여러장으로 분활하고, CNN모델을 이용해 이미지를 분석함 하지만 YOLO는 이미지 한 번만 보고 실행하기 떄문에 속도가 빠름
+2.통합된 모델을 사용함 기존 Object Detection모델은 다양한 전처리 모델과 인공 신경망을 결합해서 사용함 하지만 YOLO는 통합된 모델을 사용해 다른 네트워크 보다 간단함
+3.실시간으로 객체를 탐지 할 수 있는것이다. YOLO는 높은성능은 아니더라도 준수한 성능으로 실시간 Object Detection이 가능했기 때문에 기존의 Faster R-CNN보다 6배 빠른 성능을 보여준다.
+
+장점
+1. 간단한 처리과정으로 속도가 매우 빠르면 기존은 실시간 object detection 모델들과 비교하면 2배정도 높은 mAP를 보인다.
+2. 이미지 전체를 한번에 바라보는 방식을 이용하므로 calss에 대한 맥략적 이해도가 다른 모델에 비해 높아 낮은 False-Positive를 보인다.
+3. 일반화된 object학습이 가능하여 자연 이미지로 학습하고 이름 그림과 같은 곳에 테스트 해도 다른 모델에 비해 휠씬 높은 성능을 보여줌
 
 Segmentation은 semantic Segmentation과 Instance Segmentation으로 나뉨
 semantic Segmentation은 각각의 물체가 어떤 class인지만 구분함
