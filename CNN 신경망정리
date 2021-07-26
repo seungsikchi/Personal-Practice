@@ -97,6 +97,8 @@ yolo
 Segmentation은 semantic Segmentation과 Instance Segmentation으로 나뉨
 semantic Segmentation은 각각의 물체가 어떤 class인지만 구분함
 
+1. trade-off - 넓은 범위의 이미지를 한꺼번에 인식하면 전반적인 context를 파악하기에 용이하지만 localization를 제대로 수행하지 못해 어떤 픽셀이 어떤 레이블인지 세밀하게 인식하지 못한다. 반대로 범위를 좁히면 세밀한 localization이 가능하지만 context인식률 은 떨어짐
+
 AlexNet, VGG등 분류에 자주 쓰이는 깊은 신경망들은 Semantic Segmentation을 하는데 적합하지 않음 왜냐하면 parameter의 개수와 차원을 줄이는 layer를 가지고 있어서 위치정보를 잃음
 Pooling과 Fully connected layer 를 없애고 stride가 1이고 padding도 일정한 Convolution을 진행해서 하면 가능은하나 parameter의 개수가 많아져서 메모리 문제나 계산하는데 비용이 너무많이듬
 
@@ -104,3 +106,27 @@ FCN(Fully Convolutional Network)
 1 x 1 size Convolution layer(Convolutionalization)만 사용한것이 특징
 Fully Connect layer를 사용하기 위해서는 고정된 input size를 가질 수 밖에 없다 그리고 FC layer를 지나는 순간 각 pixel에 대해 위치정보는 소실된다. 따라서 FCN은 모든 Network를 Convolution layer만 사용함으로써 input size의 제한을 받지 않고 위치정보를 보전할 수 있게 만듬 
 Instance Segmentation은 같은 class일지라도 서로 다른 물체일 경우 구분함
+
+U-Net
+특징
+Sliding window가 아닌 patch탐색 방식을 사용한다 patch방식을 사용해서 중복되는 부분이 없기떄문에 비교적 빠른 연산을 할 수 있음
+Contracting Path에서는 이미지의 context를 포착한다. 그리고 Expanding Path에서는 feature map을 upsampling한 뒤, 이를 Contracting Path에서 포착한(feature map)context와 결합하여 localization의 정확도를 높인다.
+
+순서는 Contractin Path와 Expanding Path로 나눠짐 
+Contracting Path - Input이미지의 context를 포착하는 단계이다. 일반적인 Convolutional, Pooling Layer로 구성되어 있다.
+Expanding Path - 세밀한 Localization을 위한 구성 높은 차원의 채널을 갖는 Up-Sampling 얕은 레이어의 특징맵을 결합
+
+Contracting Path
+각 Contracting Step 마다 3 X 3 Convolution을 두차례씩 반복(단, 패딩이 없음으로 Feautre Map이 조금씩 줄어듬) ReLU연산이 포함됨
+Contracting Step마다 2 x 2 max-pooling(stride : 2) 연산을 수행함 이때 Feature map의 크기가 절반으로 줄어듬
+Down-sampling마다 채널의 수가 2배로 늘어남
+대부분 Convolution 2번에 max pooling 1번씩 함
+
+Expanding Path
+각 Expanding Step마다 2 x 2 Up-convolution을 수행함 이때, Feature map의 크기가 ½만큼 줄어듬
+각 Expanding Step마다 3 x 3 convolution을 두 차례씩 반복(ReLU 포함) (단, 패딩이 없음으로 Feature map이 조금씩 줄어듬)
+Up-Sampling 마다 채널의 수가 절반으로 줄어듬
+대부분 Convolution 2번에 Up-convolution 1번
+
+Skip Architecture = 각Expandng Step마다 Up-conv 된 특징맵은 Contracting path의 Cropped된 특징맵과 Concatenation함
+
