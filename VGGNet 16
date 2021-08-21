@@ -37,17 +37,16 @@ class dataSet():
         #모든 경로들을 다 가져와서 result에 넣음
         train_data = [ y for x in os.walk(path) for y in glob(os.path.join(x[0], '*.*'))]
         # print(result)
-        labeling_data = [ y for x in os.walk(path) for y in glob(os.path.join(x[0], '*.*'))]
+
 
         for localPath in train_data:
-            img, target = self.imageRead(localPath)
+            img = self.imageRead(localPath)
             self.x.append(img)
-            self.y.append(target)
 
-            for localPath in labeling_data:
-                img, target = self.imageRead(localPath)
-                self.x.append(img)
-                self.y.append(target)
+            for localPath in len(train_data):
+                PH = int(input("산도를 입력해주세요"))
+                self.y.append(PH)
+
         return self.x, self.y
 
     
@@ -139,10 +138,10 @@ model = tf.keras.Sequential([
     tf.keras.layers.Flatten(),
     tf.keras.layers.Dense(512, activation = 'elu'),
     tf.keras.layers.Dense(256, activation = 'elu'),
-    tf.keras.layers.Dropout(rate = 0.5)
+    tf.keras.layers.Dropout(rate = 0.5),
     tf.keras.layers.Dense(128, activation = 'elu'),
     tf.keras.layers.Dense(64, activation = 'elu'),
-    tf.keras.layers.Dropout(rate = 0.5)
+    tf.keras.layers.Dropout(rate = 0.5),
     tf.keras.layers.Dense(32, activation = 'elu'),
     tf.keras.layers.Dense(16, activation = 'elu'),
     tf.keras.layers.Dense(10, activation = 'softmax'),
