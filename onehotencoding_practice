@@ -1,0 +1,96 @@
+import numpy as np
+import matplotlib.pyplot as plt
+from time import time
+import tensorflow as tf
+import numpy as np
+from keras.utils.np_utils import to_categorical
+
+# 데이터 준비
+
+fashion_mnist = tf.keras.datasets.fashion_mnist 
+(train_X, train_Y), (test_X, test_Y) = fashion_mnist.load_data()
+
+print('\n')
+print('학습용 입력 데이터 모양: ',train_X.shape)
+print('학습용 출력 데이터 모양: ',train_Y.shape)
+print('평가용 입력 데이터 모양: ',test_X.shape)
+print('평가용 입력 데이터 모양: ',test_Y.shape)
+
+# 어떤 데이터인지 확인하고 데이터의 라벨을 출력
+plt.imshow(train_X[0], cmap = 'gray')
+plt.show()
+
+for i in range(1, 10):
+  print('샘플 데이터 라벨 :', train_Y[i])
+
+#데이터 정규화
+train_X = train_X / 255.0
+test_X = test_X / 255.0
+
+#데이터의 공간을 다시 설정함
+train = train_X.shape[0]
+train_X = train_X.reshape(train, 28, 28, 1)
+test = test_X.shape[0]
+test_X = test_X.reshape(test, 28, 28, 1)
+
+#출력 데이터
+for i in range(1, 10):
+  print('원핫 인코딩 전: ', train_Y[i])
+train_Y = to_categorical(train_Y, 10) # keras의 to_categorical을 사용하여 라벨을 원핫인코딩으로 변경
+
+for i in range(1, 10):
+  print('원핫 인코딩 후: ', train_Y[i])
+
+test_Y = to_categorical(test_Y, 10) # keras의 to_categorical을 사용하여 라벨을 원핫인코딩으로 변경
+
+print('학습용 출력 데이터 모양 : ', train_Y.shape)
+print('평가용 출력 데이터 모양 : ', test_Y.shape)
+
+# LeNet알고리즘을 사용해서 분류하도록 설정(10가지의 종류) = softmax의 유닛을 10개로 설정해야함
+model = tf.keras.Sequential([
+        tf.keras.layers.Conv2D(input_shape = (28,28,1), kernel_size = (5,5), strides = (1,1), filters = 1, padding = "same", activation = "tanh"),
+        tf.keras.layers.AveragePooling2D(pool_size=(2, 2)),
+        tf.keras.layers.Conv2D(filters = 6, kernel_size = (5,5), strides = (1,1), padding = "same", activation = "tanh"),
+        tf.keras.layers.AveragePooling2D(pool_size=(2, 2)),
+        tf.keras.layers.Conv2D(filters = 16, kernel_size = (5,5), strides = (1,1), padding = "same", activation = "tanh"),
+        tf.keras.layers.AveragePooling2D(pool_size=(2, 2)),
+        tf.keras.layers.Flatten(),
+        tf.keras.layers.Dense(units = 120, activation= 'tanh'),
+        tf.keras.layers.Dense(units = 84, activation= 'tanh'),
+        tf.keras.layers.Dense(units = 10, activation= 'softmax'),
+        ])
+
+model.compile(optimizer = tf.keras.optimizers.Adam(), loss = 'categorical_crossentropy', metrics = ['accuracy'])
+
+model.summary()
+
+print(train_X.shape)
+print(train_Y.shape)
+
+# 모델을 학습시킴
+history = model.fit(train_X, train_Y, epochs = 10, validation_split = 0.25)
+
+#모델이 학습 된 결과를 출력함
+plt.figure(figsize = (12,4))
+plt.subplot(1,2,1)
+plt.plot(history.history['loss'], 'b-', label = 'loss')
+plt.plot(history.history['val_loss'], 'r--', label = 'val_loss')
+plt.xlabel('Epochs')
+plt.legend()
+
+plt.subplot(1,2,2)
+plt.plot(history.history['accuracy'], 'g-', label = 'accuracy')
+plt.plot(history.history['val_accuracy'], 'k--', label = 'val_accuracy')
+plt.xlabel('Epochs')
+plt.ylim(0.7, 1)
+plt.legend()
+
+plt.show()
+
+# 학습한 모델의 검증했을때의 loss와 acuuracy를 확인
+model.evaluate(test_X, test_Y, verbose = 0)
+
+# 학습한 모델을 사용해서 분류
+pred = model.predict(test_X)
+print("결과 : ",test_Y[0])
+print("예측 : ",pred[0])
