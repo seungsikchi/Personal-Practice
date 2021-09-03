@@ -1,236 +1,145 @@
-#globalPath에 현제 실행시킬 환경에 데이터가 저장되어 있는 위치를 입력
-
-
-from PIL import Image
-import os
-from glob import glob
-import numpy as np
-from sklearn.utils import shuffle
-from sklearn.model_selection import train_test_split
-import random
+import DataProcessing as dp
 import matplotlib.pyplot as plt
+import numpy as np
+import math
+
+from tensorflow.keras.layers import Dense, Conv2D, MaxPooling2D, Flatten
+from tensorflow.keras.optimizers import Adam
 import tensorflow as tf
-import cv2
-import win32file
+from sklearn.model_selection import train_test_split
 
+def Model(inputs=(256, 256, 3)):
 
+    model = tf.keras.Sequential([
+        Conv2D(filters=32, kernel_size=3, padding='same', activation='relu', input_shape=inputs),
+        Conv2D(filters=32, kernel_size=3, padding='same', activation='relu'),
+        MaxPooling2D(pool_size=(2,2)), # 64
+        
+        Conv2D(filters=64, kernel_size=3, padding='same', activation='relu'),
+        Conv2D(filters=64, kernel_size=3, padding='same', activation='relu'),
+        MaxPooling2D(pool_size=(2,2)), # 32
 
-class dataSet():
+        Conv2D(filters=128, kernel_size=3, padding='same', activation='relu'),
+        Conv2D(filters=128, kernel_size=3, padding='same', activation='relu'),
+        MaxPooling2D(pool_size=(2,2)), # 16
+
+        Conv2D(filters=256, kernel_size=3, padding='same', activation='relu'),
+        Conv2D(filters=256, kernel_size=3, padding='same', activation='relu'),
+        MaxPooling2D(pool_size=(2,2)), # 8
+
+        Flatten(),
+        Dense(1024, activation='relu'),
+        Dense(256, activation='relu'),
+        Dense(64, activation='relu'),
+        Dense(1)
+    ])
+
+    model.compile(optimizer=Adam(), loss='mean_squared_error')
+    model.summary()
+
+    return model
+
+def train_model(input_shape, train_x, train_y, epoch):
+    model = Model(input_shape) 
+
+    history = model.fit(train_x, train_y, epochs=epoch, validation_split=0.2)
+    model.save('../VGG_model.h5')
+
+    plt.figure(figsize = (12,4))
+    plt.plot(history.history['loss'], 'b-', label = 'loss')
+    plt.plot(history.history['val_loss'], 'r--', label = 'val_loss')
+    plt.xlabel('Epochs')
+    plt.ylim(0, 0.01)
+    plt.legend()
+
+    plt.show()
+
+    return model
+
+def pred_model(trained_model, train_x, test_x, test_y):
+    model = trained_model # 이렇게 model을 새로 받으면 가중치 초기화 아닌가? 테스트하기
+    train_pred = model.predict(train_x)
+    test_pred = model.predict(test_x)
+    print(test_pred.shape)
+    print(train_pred.shape)
+    test_y = test_y * 10 # normalize 풀기
+    PH = test_pred * 10
+
+    for i in range(10):
+        #print('\n정답 : {}, 예상 : {}'.format(test_y[i], PH[i]))
+        print(test_y[i], PH[i][0])
+
+        plt.subplot(1, 10, i+1)
+        plt.imshow(test_x[i])
+        plt.xlabel(PH[i][0])
+        plt.ylabel(test_y[i])
+
+    return train_pred, test_pred
+
+def Scatterplot(train_pred, test_pred, train_y, test_y):
+
+    train_y = train_y * 10
+    train_pred = train_pred * 10
+    train_y = train_y[0:249]
+    train_pred = train_pred[0:249]
+    test_y = test_y * 10
+    test_pred = test_pred * 10
+
+    plt.figure(figsize = (5,5))
+    plt.plot(train_y, train_pred, 'r.', label = 'train_y')
+    plt.plot(test_y, test_pred, 'b.', label = 'test_y')
+    plt.axis([min(train_y), max(train_y), min(train_y), max(train_y)])
+
+    #y = x에 해당하는 선
+    plt.plot([min(train_y), max(train_y)], [min(train_y), max(train_y)], ls="--", c=".3", label = 'y=x')
+    plt.xlabel('Actual PH')
+    plt.ylabel('pred')
+    plt.legend()
+
+    plt.show()
+
+def correlation(train_y, test_y):
+
+    train_Variance = []
+    test_Variance = []
+    train_Deviation = []
+    test_Deviation = []
+    Covariance = []
+
+    for i in range(train_y):
+        train_sum = train_sum + train_y[i]
+    for i in range(test_y):
+        test_sum = test_sum + test_y[i]
+
+    train_avarage = train_sum/len(train_y)
+    test_avarage = test_sum/len(test_y)
+
+    for i in range(len(train_y)):
+        train_Deviation[i] = train_y[i] - train_avarage
+    for i in range(len(test_y)):
+        test_Deviation[i] = test_y[i] - test_avarage
+
+    for i in range(len(train_y)):
+        train_Variance.append((train_y[i] - train_avarage) * (train_y[i] - train_avarage)/len(train_y))
+        trainVariance_sum = trainVariance_sum + train_Variance[i]
+    for i in range(len(test_y)):
+        test_Variance.append((test_y[i] - test_avarage) * (test_y[i] - test_avarage)/len(test_y))
+        testVariance_sum = testVariance_sum + test_Variance[i]
+    for i in range(len(test_y)):
+        Covariance[i] = train_Deviation[i] * test_Deviation[i]/math.sqrt(trainVariance_sum * testVariance_sum)
+
+    plt.figure(figsize = (12,4))
+
     
-    #초기함수
-    def __init__(self, globalPath=None):
-        self.globalPath = globalPath
-        self.x = []
-        self.y = []
 
-        #in splitData
-        self.train_x = []
-        self.train_y = []
-        self.test_x = []
-        self.test_y = []
-    
-    #이미지를 불러오는 함수 (path = 지금 현재 데이터가 저장되어 있는 파일 주소)
-    def imageRead(self, path):
-        x = Image.open(path)
-        y = path.split("_")[2]
 
-        return x, float(y)
 
-    #실제로 모든 데이터를 읽어들이는 함수
-    def getFilesInFolder(self, path):
-        #모든 경로들을 다 가져와서 result에 넣음
-        train_data = [ y for x in os.walk(path) for y in glob(os.path.join(x[0], '*.*'))]
-        # print(result)
+path = './train_crop'
+dim = 256
+pre_p = dp.DataProcessing(path)
+train_x, train_y, test_x, test_y = pre_p.load_data(dim)
 
-        for localPath in train_data:
-            # for i in range(5):
-            img, target = self.imageRead(localPath)
-            self.x.append(img)
-            self.y.append(target)
 
-    #이전에 설정한 dim값으로 데이터 전체를 사이즈를 변환함
-    def resizeAll(self, X, Y, dim):
-        
-        resizedX = []
-        resizedY = []
-
-        N = len(X)
-
-        for i in range(N):
-            resized = X[i].resize((dim, dim))
-            npImg = np.array(resized)
-
-            if len(npImg.shape) == 3:
-                resizedX.append(npImg)
-                resizedY.append(Y[i])
-        
-        self.x = np.array(resizedX)
-        self.y = np.array(resizedY)
-        self.y = np.reshape(self.y, (-1, 1))
-    
-    #학습데이터랑 테스트데이터로 나누는 함수
-    def splitDataset(self):
-        self.train_x, self.test_x, self.train_y, self.test_y = train_test_split(self.x, self.y, test_size=0.2, shuffle=True, stratify=self.y)
-        self.test_label = self.test_y
-
-    def onehotencoding(self):
-        tempS = set()
-        tempKey = list()
-        tempVal = list()
-        self.tempD = dict()
-
-        for i in range(len(self.train_y)): # PH 종류 받기
-            tempS.add(float(self.train_y[i]))
-        print('분류해야할 PH 종류개수 :', len(tempS))
-        
-        tempKey = list(tempS) # srot함수를 사용하기위해 list로 자료형 변환
-        tempKey.sort()
-        
-        for i in range(len(tempKey)): # dict에 key와 value를 넣기위해 리스트 생성
-            tempVal.append(i)
-
-        self.tempD = dict(zip(tempKey, tempVal)) # 두 리스트를 이용해 dict 생성 
-        
-        shape = (len(self.train_y), len(tempS))
-        self.train_Y = np.zeros(shape, dtype=int)
-        self.test_Y = np.zeros(shape, dtype=int)
-
-        for idx, ph in enumerate(self.train_y):
-            onehot_encoding = np.zeros(len(tempS), dtype=int)
-            a = self.tempD[float(ph)]
-            onehot_encoding[int(a)] = 1
-            self.train_Y[idx] = onehot_encoding
-        
-        for idx, ph in enumerate(self.test_y):
-            onehot_encoding = np.zeros(len(tempS), dtype=int)
-            a = self.tempD[float(ph)]
-            onehot_encoding[int(a)] = 1
-            self.test_Y[idx] = onehot_encoding
- 
-    #정규화 함수
-    def normZT(self, x):
-        x = (x - np.mean(x) / np.std(x))
-        return x
-    
-    #MinMax정규화 함수
-    def normMinMax(self, x):
-        x = (x - np.min(x)) / (np.max(x) - np.min(x))
-        return x
-
-    #위에 함수들을 다 실행시키는 함수
-    def load_data(self, dim):
-        self.getFilesInFolder(self.globalPath) #전체 데이터 가져옴
-        self.resizeAll(self.x, self.y, dim) # numpy화 되어 있음
-        self.splitDataset() #훈련용, 시험용으로 쪼개기
-        # self.onehotencoding()
-        self.test_X = self.test_x
-        self.train_x = self.normZT(self.train_x) #train 정규화
-        self.test_x = self.normZT(self.test_x) #test 정규화
-        
-        return self.train_x, self.train_y, self.test_x, self.test_y, self.test_X, self.test_label
-
-class train_fuction:
-
-    def __init__(self, train_x, train_y, test_x, test_y, test_X, test_label):
-        self.train_x = train_x
-        self.train_y = train_y
-        self.test_x = test_x
-        self.test_y = test_y
-        self.train_X = test_X
-        self.test_label = test_label
-
-    def Model(self):
-        
-        lrelu = lambda x: tf.keras.activations.relu(x, alpha=0.2)
-
-        model = tf.keras.Sequential([
-            tf.keras.layers.Conv2D(input_shape = (128,128,3),kernel_size = (3,3), filters = 32, padding = 'same', activation = "relu"),
-            tf.keras.layers.Conv2D(kernel_size = (3,3), filters = 64, padding = 'same', activation = "relu"),
-            tf.keras.layers.Dropout(rate = 0.5),
-            tf.keras.layers.MaxPool2D(pool_size = (2,2)),
-            tf.keras.layers.Conv2D(kernel_size = (3,3), filters = 128, padding = 'same', activation = "relu"),
-            tf.keras.layers.Conv2D(kernel_size = (3,3), filters = 128, padding = 'same', activation = "relu"),
-            tf.keras.layers.Dropout(rate = 0.5),
-            tf.keras.layers.MaxPool2D(pool_size = (2,2)),
-            tf.keras.layers.Conv2D(kernel_size = (3,3), filters = 256, padding = 'same', activation = "relu"),
-            tf.keras.layers.Conv2D(kernel_size = (3,3), filters = 256, padding = 'same', activation = "relu"),
-            tf.keras.layers.Conv2D(kernel_size = (3,3), filters = 256, padding = 'same', activation = "relu"),
-            tf.keras.layers.Dropout(rate = 0.5),
-            tf.keras.layers.MaxPool2D(pool_size = (2,2)),
-            tf.keras.layers.Conv2D(kernel_size = (3,3), filters = 512, padding = 'same', activation = "relu"),
-            tf.keras.layers.Conv2D(kernel_size = (3,3), filters = 512, padding = 'same', activation = "relu"),
-            tf.keras.layers.Conv2D(kernel_size = (3,3), filters = 512, padding = 'same', activation = "relu"),
-            tf.keras.layers.Dropout(rate = 0.5),
-            tf.keras.layers.MaxPool2D(pool_size = (2,2)),
-            tf.keras.layers.Conv2D(kernel_size = (3,3), filters = 512, padding = 'same', activation = "relu"),
-            tf.keras.layers.Conv2D(kernel_size = (3,3), filters = 512, padding = 'same', activation = "relu"),
-            tf.keras.layers.Conv2D(kernel_size = (3,3), filters = 512, padding = 'same', activation = "relu"),
-            tf.keras.layers.Dropout(rate = 0.5),
-            tf.keras.layers.Flatten(),
-            tf.keras.layers.Dense(units = 4096, activation= 'relu'),
-            tf.keras.layers.Dropout(rate = 0.5),
-            tf.keras.layers.Dense(units = 1000, activation= 'relu'),
-            tf.keras.layers.Dropout(rate = 0.5),
-            tf.keras.layers.Dense(units = 76, activation = 'softmax')
-        ])
-
-        model.compile(optimizer = tf.keras.optimizers.Adam(), loss = 'sparse_categorical_crossentropy', metrics = ['accuracy'])
-
-        model.summary()
-
-        return model
-
-    def train(self):
-        model = self.Model()
-
-        #위에서 정의한 모델 학습
-        history = model.fit(train_x, train_y, epochs=5, validation_split= 0.2)
-        model.save('C:/local_smartFactory_Sambo/Wastewater exchange')
-        
-        plt.figure(figsize = (12,4))
-        plt.subplot(1,2,1)
-        plt.plot(history.history['loss'], 'b-', label = 'loss')
-        plt.plot(history.history['val_loss'], 'r--', label = 'val_loss')
-        plt.xlabel('Epochs')
-        plt.legend()
-
-        plt.subplot(1,2,2)
-        plt.plot(history.history['accuracy'], 'g-', label = 'accuracy')
-        plt.plot(history.history['val_accuracy'], 'k--', label = 'val_accuracy')
-        plt.xlabel('Epochs')
-        plt.ylim(0.7, 1)
-        plt.legend()
-
-        plt.show()
-
-    def model_pred(self):
-        model = self.Model()
-        pred = model.predict(self.test_x)
-        print('pred :', pred)
-
-        # for i in range(0, 10):
-        #     PH = np.argmax(pred[i])
-
-        #     for key, value in ds.tempD.items():
-        #         if PH == value:
-        #             PH = key
-        #             break
-            
-        #     print('\n정답 : {}, 예상 : {}'.format(float(test_label[i]), PH))
-
-        #     plt.subplot(1, 10, i+1)
-        #     plt.imshow(test_X[i])
-        #     plt.xlabel(PH)
-        #     plt.ylabel(float(test_label[i]))
-        # plt.show()
-        
-    def train_start(self):
-        self.train()
-        self.model_pred()
-        
-globalPath = './train_crop'
-ds = dataSet(globalPath)
-train_x, train_y, test_x, test_y, test_X, test_label = ds.load_data(128)
-
-LeNet_train = train_fuction(train_x, train_y, test_x, test_y, test_X, test_label)
-LeNet_train.train_start()
+trained_model = train_model((dim, dim, 3), train_x, train_y, 100)
+train_pred, test_pred = pred_model(trained_model, train_x, test_x, test_y)
+Scatterplot(train_pred, test_pred, train_y, test_y)
