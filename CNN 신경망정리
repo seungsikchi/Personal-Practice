@@ -130,3 +130,6 @@ Up-Sampling 마다 채널의 수가 절반으로 줄어듬
 
 Skip Architecture = 각Expandng Step마다 Up-conv 된 특징맵은 Contracting path의 Cropped된 특징맵과 Concatenation함
 
+공간적 메커니즘
+ESA(Enhanced Spatial Attention) = ESA 모듈에서는 채널에 대한 Attention을 계산하기 위해 글로벌 평균 풀링 기능을 사용하며 미세한 채널을 조정하였고, 여기서는 추가적으로 Max pooling 기능도 사용할 것을 제안함.
+앞에서 제시한 방법은 초점을 맞출 'where' 부분을 결정하는데 중요한 역할을 하는 공간적 관심을 놓친다. CBAM 저널에서는 효율적인 구조에 기초하여 공간, 채널 Attention을 모두 이용하여 채널을 이용만 하는 것 보다 우월하다는 것을 입증함.
