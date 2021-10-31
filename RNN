@@ -1,0 +1,152 @@
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+import re
+import io
+import urllib.request
+from konlpy.tag import Okt
+from tqdm import tqdm
+from tensorflow.keras.preprocessing.text import Tokenizer
+from tensorflow.keras.preprocessing.sequence import pad_sequences
+import tensorflow as tf
+
+
+urllib.request.urlretrieve("https://raw.githubusercontent.com/e9t/nsmc/master/ratings_train.txt", filename="review_train.txt")
+urllib.request.urlretrieve("https://raw.githubusercontent.com/e9t/nsmc/master/ratings_test.txt", filename="review_test.txt")
+
+train_review = pd.read_csv('review_train.txt', sep="\t")
+test_review = pd.read_csv('review_test.txt', sep="\t")
+
+train_review[:10]
+
+test_review[:10]
+
+
+print('학습데이터 개수 : {}'.format(len(train_review)))
+print('테스트데이터 개수 : {}'.format(len(test_review)))
+
+test_review.isnull().sum()
+train_review[train_review["document"].isnull()]
+
+train_review=train_review.dropna(subset=['document'])
+print('train 리뷰 개수 :',len(train_review))
+
+test_review.isnull().sum()
+test_review[test_review["document"].isnull()]
+
+
+test_review["document"].isnull().value_counts()
+test_review=test_review.dropna(subset=['document'])
+
+print('train 리뷰 개수 :',len(train_review))
+print('test 리뷰 개수 :',len(test_review))
+
+
+
+all_review = pd.concat([train_review,test_review],ignore_index=True)
+sentence_length = all_review["document"].apply(lambda x : len(x.split()))
+mean_seq_len = sentence_length.mean().astype(int)
+sns.distplot(tuple(sentence_length), hist=True, kde=True, label='Sentence length')
+plt.axvline(x=mean_seq_len, color='k', linestyle='--', label=f'Sequence length mean:{mean_seq_len}')
+plt.title('Sentence length')
+plt.legend()
+plt.show()
+print(f"가장 긴 문장 내 단어의 수 : {sentence_length.max()}")
+print(f"가장 짧은 문장 내 단어의 수 : {sentence_length.min()}")
+print(f"평균 문장 내 단어의 수 : {mean_seq_len}")
+
+print(set(train_review["label"]))
+train_review['label'].value_counts()
+test_review['label'].value_counts()
+
+train_label = np.array(train_review['label'])
+test_label = np.array(test_review['label'])
+
+koreanSpace_word = re.compile('[^ ㄱ-ㅣ가-힣]+')
+train_review["document"]=train_review["document"].str.replace(koreanSpace_word, '')
+train_review
+
+okt = Okt()
+print(okt.morphs("아버지가방에 들어가신다"))
+
+train_tok_sentence = []
+
+for sentence in tqdm(train_review['document']):
+    tokenized_sentence = okt.morphs(sentence, stem=True)
+    train_tok_sentence.append(tokenized_sentence)
+
+
+stopWord = []
+with io.open("불용어사전.txt", mode='r',encoding="utf-8") as f:
+    for a in f:
+        stopWord.append(a.strip())
+print(stopWord)
+
+train_remove_tok_sentence=[]
+for sentence in train_tok_sentence:
+    train_remove_tok_sentence.append([x for x in sentence if not x in stopWord])
+
+
+train_remove_tok_sentence[:5]
+
+zero_length_index = []
+for idx, sentence in enumerate(train_remove_tok_sentence):
+    if len(sentence) == 0:
+        zero_length_index.append(idx)
+
+train_remove_tok_sentence = np.delete(train_remove_tok_sentence, zero_length_index, axis=0)
+train_label = np.delete(train_label, zero_length_index, axis=0)
+
+tokenizer = Tokenizer()
+tokenizer.fit_on_texts(train_remove_tok_sentence)
+train_encoding_sentence = tokenizer.texts_to_sequences(train_remove_tok_sentence)
+
+vocab_size=len(tokenizer.word_index)+1
+train_encoding_sentence[:5]
+
+max_length = 0
+for sentence in train_encoding_sentence:
+    if max_length < len(sentence):
+        max_length = len(sentence)
+print(max_length)
+
+train_padding_sentence = pad_sequences(train_encoding_sentence, maxlen = max_length)
+train_padding_sentence[:5]
+train_padding_sentence = pad_sequences(train_encoding_sentence, maxlen = max_length)
+
+
+embedding_dim = 128
+
+model_rnn = tf.keras.models.Sequential([
+    tf.keras.layers.Embedding(vocab_size, embedding_dim),
+    tf.keras.layers.SimpleRNN(128),
+    tf.keras.layers.Dense(1, activation="sigmoid")
+])
+
+model_rnn.compile(optimizer='adam', loss='binary_crossentropy', metrics=['acc'])
+
+filename = 'fit-model-tmp-chkpoint.h5'
+EarlyStop = tf.keras.callbacks.EarlyStopping(monitor='val_loss', mode='min', verbose=1, patience=2)
+checkpoint = tf.keras.callbacks.ModelCheckpoint(filename, verbose=1, monitor='val_loss', save_best_only=True, mode='auto')
+history=model_rnn.fit(train_padding_sentence,train_label,epochs = 10, callbacks=[checkpoint,EarlyStop],batch_size=128,validation_split=0.2)
+
+
+test_review["document"]=test_review["document"].str.replace(koreanSpace_word, '')
+test_tok_sentence = []
+for sentence in tqdm(test_review['document']):
+    tokenized_sentence = okt.morphs(sentence, stem=True)
+    test_tok_sentence.append(tokenized_sentence)
+test_remove_tok_sentence=[]
+for sentence in test_tok_sentence:
+    test_remove_tok_sentence.append([x for x in sentence if not x in stopWord])
+zero_length_index = []
+for idx, sentence in enumerate(test_remove_tok_sentence):
+    if len(sentence) == 0:
+        zero_length_index.append(idx)
+test_remove_tok_sentence = np.delete(test_remove_tok_sentence, zero_length_index, axis=0)
+test_label = np.delete(test_label, zero_length_index, axis=0)
+test_encoding_sentence = tokenizer.texts_to_sequences(test_remove_tok_sentence)
+test_padding_sentence = pad_sequences(test_encoding_sentence, maxlen = max_length)
+
+print("\n 테스트 정확도:" + str(int(model_rnn.evaluate(test_padding_sentence, test_label)[1]*100))+"%")
