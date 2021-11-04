@@ -1,7 +1,6 @@
 from glob import glob
 import numpy as np
 import os
-import pydicom
 from sklearn.utils import shuffle
 
 class dataSet():
