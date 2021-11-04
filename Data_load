@@ -66,6 +66,10 @@ class dataSet():
         x = np.array(x)
         x = shuffle(x)
         return x
+        
+    def normZT(self, x):
+        x = (x - np.mean(x) / np.std(x))
+        return x
 
     def NormalizeMM(self, x):
         maxvalue = np.max(x)  # m_Voxel의 가장 큰 값을 뽑아낸다.
@@ -92,7 +96,7 @@ class dataSet():
         self.resizeAll(self.x, dim) # numpy화 되어 있음
         self.x = self.shuffleData(self.x)
         self.split_Dataset(ratio)
-        self.train_x = self.normalization(self.train_x)
+        self.train_x = self.NormalizeMM(self.train_x)
 
         return self.train_x
 
