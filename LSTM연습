@@ -1,0 +1,12 @@
+import pandas as pd
+import tensorflow as tf
+import matplotlib.pyplot as plt
+
+
+body_data = pd.read_csv("./bodyperformance.csv")
+body_data = body_data.drop(['diastolic','systolic', 'gripForce', 'sit and bend forward_cm', 'sit-ups counts', 'broad jump_cm', 'class'], axis= 1)
+
+
+print(body_data.head(20))
+
+print(pd.isnull(body_data))
