@@ -1,59 +1,90 @@
 import tensorflow as tf
 import pandas as pd
 import matplotlib.pyplot as plt
+import os
+import glob
 
 from keras.callbacks import EarlyStopping
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import MinMaxScaler
 
 
-Data = pd.read_csv('./bodyPerformance.csv')
 
-print(Data)
+class Squat:
+    
+    def __init__(self):
+        self.train_X = []
+        self.train_Y = []
+        self.test_X = []
+        self.test_Y = []
+        self.X_data = []
+        self.Y_data = []
+    
+    def Data_load(self):
+        
+        Data = pd.read_csv('./bodyPerformance.csv')
 
-train_X = Data[['age', 'height_cm', 'weight_kg']]
-train_Y = Data[['squat']]
+        print(Data)
 
-print(train_X)
-print('############################################')
-print(train_Y)
+        self.X_data = Data[['age', 'height_cm', 'weight_kg']]
+        self.Y_data = Data[['squat']]
 
-scaler_x=MinMaxScaler()
-scaler_x.fit(train_X)
-Normalization_data_x=scaler_x.transform(train_X)
 
-train_X = pd.DataFrame(data=Normalization_data_x)
 
-scaler_y=MinMaxScaler()
-scaler_y.fit(train_Y)
-train_Normalization_data_y=scaler_y.transform(train_Y)
+    def Data_processing(self):
+        scaler_x=MinMaxScaler()
+        scaler_x.fit(self.X_data)
+        Normalization_data_x=scaler_x.transform(self.X_data)
 
-train_Y = pd.DataFrame(data=train_Normalization_data_y)
+        self.train_X = pd.DataFrame(data=Normalization_data_x)
 
-train_x, test_x, train_y, test_y = train_test_split(train_X, train_Y, test_size = 0.1, random_state=0, shuffle = True)
+        self.scaler_y=MinMaxScaler()
+        self.scaler_y = self.scaler_y.fit(self.Y_data)
+        train_Normalization_data_y= self.scaler_y.transform(self.Y_data)
 
-model = tf.keras.Sequential([
-    tf.keras.layers.Dense(128, activation = 'sigmoid', input_shape = (train_x.shape)),
-    tf.keras.layers.Dense(64, activation = "sigmoid"),
-    tf.keras.layers.Dense(32, activation = "sigmoid"),
-    tf.keras.layers.Dense(1)
-])
+        self.train_Y = pd.DataFrame(data=train_Normalization_data_y)
+        
+        self.train_x, self.test_x, self.train_y, self.test_y = train_test_split(self.train_X, self.train_Y, test_size = 0.1, random_state=0, shuffle = True)
 
-optimizer = tf.keras.optimizers.Adam(learning_rate=0.001)
 
-model.compile(optimizer = optimizer, loss = 'mse', metrics = [tf.keras.metrics.RootMeanSquaredError()])
+    def Model(self):
+       model = tf.keras.Sequential([
+            tf.keras.layers.Dense(128, activation = 'tanh', input_shape = (self.train_x.shape)),
+            tf.keras.layers.Dense(64, activation = "tanh"),
+            tf.keras.layers.Dense(32, activation = "tanh"),
+            tf.keras.layers.Dense(1)
+        ])
 
-model.summary()
+       model.compile(optimizer = tf.keras.optimizers.Adam(learning_rate = 0.001), loss = 'mse', metrics = ['accuracy'])
 
-early_stopping = EarlyStopping(monitor = 'val_root_mean_squared_error', min_delta = 0.00001, patience = 50, verbose =1, mode = 'auto', baseline = None, restore_best_weights = True)
-history = model.fit(train_x, train_y, epochs = 3000, callbacks=(early_stopping))
-print(train_x.shape)
-print("#################################################")
-print(train_y.shape)
+       model.summary()
+        
+       return model
 
-predict_check = model.predict(test_x)
+    def train(self):
+        model = self.Model()
+        early_stopping = EarlyStopping(monitor = 'val_root_mean_squared_error', min_delta = 0.00001, patience = 50, verbose =1, mode = 'auto', baseline = None, restore_best_weights = True)
+        history = model.fit(self.train_x, self.train_y, epochs = 3000, validation_split = 0.25, callbacks=(early_stopping))
+        print(self.train_x.shape)
+        print("#################################################")
+        print(self.train_y.shape)
 
-predict_check = scaler_y.inverse_transform(predict_check)
-test_y = scaler_y.inverse_transform(test_y)
-print(predict_check)
-print(test_y)
+    def predict(self):
+        model = self.Model()
+        predict_check = model.predict(self.test_x)
+
+        predict_check = self.scaler_y.inverse_transform(predict_check)
+        test_y = self.scaler_y.inverse_transform(self.test_y)
+        print("#############  에측 값  ###################")
+        print(predict_check)
+        print("#############  실제 값  ###################")
+        print(test_y)
+        
+    def start(self):
+        self.Data_load()
+        self.Data_processing()
+        self.train()
+        self.predict()
+        
+Sq = Squat()
+Sq.start()
