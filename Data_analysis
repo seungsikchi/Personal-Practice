@@ -1,0 +1,56 @@
+import tensorflow as tf
+import pandas as pd
+import matplotlib.pyplot as plt
+import numpy as np
+import os
+import glob
+import scipy.stats as stats
+
+from scipy.stats import chi2_contingency
+
+
+
+class correlation:
+    def __init__(self):
+        self.target = 0
+        self.correlation = 0
+        self.X_index = ['height_cm', 'weight_kg', 'Skeletal', 'body_fat', 'BMI', 'body_fat_percentage', 'right_arm', 'left_arm', 'body', 'right_leg', 'left_leg']
+        self.Y_index = ['squat', 'banch', 'deadlift']
+        
+        
+    def Data_input(self):
+        self.Data = pd.read_csv('./inbody.csv', encoding = 'cp949')
+        
+        
+        # print(self.Data)
+        print(self.Data['height_cm'][0])
+        
+    
+    def Correlation_analysis(self, X, Y):
+        # cov = (np.sum(X*Y) - len(X)*np.mean(X)+np.mean(Y))/ len(X)
+        cov = np.cov(X, Y)
+        print(cov)
+        self.correlation = cov / (np.std(X) * np.std(Y))
+        self.P_value = stats.pearsonr(X,Y)
+        
+    def analysis(self):
+        # for i in self.X_index:
+        X = self.Data.squat.values
+        Y = self.Data.height_cm.values
+                
+        self.Correlation_analysis(X, Y)
+        print('상관분석 계수 = ',self.correlation)
+        print('P-value = ', self.P_value)
+        # pass
+            
+    def chi_square_test(self, X, Y):
+        self.chiresult = chi2_contingency(self.Data, correction = False)
+        print('Chi square: {}'.format(self.chiresult[0]))
+        print('P-value: {}'.format(self.chiresult[1])) 
+                
+    def start(self):
+        self.Data_input()
+        self.analysis()
+
+inbody = correlation()
+inbody.start()
