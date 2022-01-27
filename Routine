@@ -1,0 +1,24 @@
+class Routine:
+    def __init__(self):
+        self.first_part = 0
+        self.second_part = 0
+        self.third_part = 0
+        self.part = ['오른쪽팔', '왼쪽팔', '상체', '오른쪽다리', '왼쪽다리']
+        
+    def enter_part(self):
+        print('부위는 오른쪽팔, 왼쪽팔, 상체, 오른쪽다리, 왼쪽다리가 있습니다.')
+        self.first_part, self.second_part, self.third_part = map(str, input('위에 부위 중에 운동을 하고싶은 부위를 세개 입력해주세요').split())
+        
+    def Finding_part(self, part):
+        for i in self.part:
+            if part == i:
+                print(i)
+                
+    def start(self):
+        self.enter_part()
+        self.Finding_part(self.first_part)
+        self.Finding_part(self.second_part)
+        self.Finding_part(self.third_part)
+        
+Routine_Recommendation = Routine()
+Routine_Recommendation.start()
