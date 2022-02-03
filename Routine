@@ -1,20 +1,41 @@
+import pandas as pd
+
+
+
 class Routine:
     def __init__(self):
         self.first_part = 0
         self.second_part = 0
         self.third_part = 0
-        self.part = ['오른쪽팔', '왼쪽팔', '상체', '오른쪽다리', '왼쪽다리']
+        self.part = ['등', '다리','허리', '손목']
+        self.body = ['대흉근', '승모근', '광배근', '견갑근', '전거근']
+        self.arm = ['이두근', ' 삼두근', '전완근', '상완근']
+        self.leg = ['허벅지', '대둔근', '햄스트링', '종아리']
+        self.waist = ['척추기립근','광배근']
+        self.choice_part = []
+        self.exersize_data = []
+        
         
     def enter_part(self):
-        print('부위는 오른쪽팔, 왼쪽팔, 상체, 오른쪽다리, 왼쪽다리가 있습니다.')
+        print('부위는 등, 다리, 허리, 손목 있습니다.')
         self.first_part, self.second_part, self.third_part = map(str, input('위에 부위 중에 운동을 하고싶은 부위를 세개 입력해주세요').split())
+        
+    def execisedata_load(self):
+        self.Data = pd.read_csv('./exersize.csv',encoding = 'CP949')
+        # print(self.Data)
         
     def Finding_part(self, part):
         for i in self.part:
             if part == i:
-                print(i)
+                self.choice_part.append(i)
+        print(self.choice_part)
+
+                
+    def Execise_recommendation(self):
+        pass
                 
     def start(self):
+        self.execisedata_load()
         self.enter_part()
         self.Finding_part(self.first_part)
         self.Finding_part(self.second_part)
