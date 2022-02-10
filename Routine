@@ -27,11 +27,11 @@ class Routine:
         #     self.first_part, self.second_part, self.third_part = map(str, input('운동을 하고싶은 근육이름를 세개 입력해주세요').split())
         
         
-        # self.first_part, self.second_part, self.third_part = map(str, input('운동을 하고싶은 근육이름를 세개 입력해주세요\n').split())
+        self.first_part, self.second_part, self.third_part = map(str, input('운동을 하고싶은 근육이름를 세개 입력해주세요\n').split())
 
-        self.first_part = '대흉근'
-        self.second_part = '승모근'
-        self.third_part = '능형근'
+        # self.first_part = '대흉근'
+        # self.second_part = '승모근'
+        # self.third_part = '능형근'
         
     def exercizedata_load(self):
         self.Data = pd.read_csv('./exersize.csv',encoding = 'CP949')
@@ -44,13 +44,13 @@ class Routine:
         # print(self.Data)
                 
     def first_Exercise_recommendation(self):
-        first_result = []
+        first_result = {}
         first_number = []
 
-        second_result = []
+        second_result = {}
         second_number = []
 
-        third_result = []
+        third_result = {}
         third_number = []
         
         for i in range(len(self.exercize_data)):
@@ -141,16 +141,24 @@ class Routine:
         print(third_result)
         
         
-    def Exercise_recommendation(self,previous_number, considerations, muscle):
-        result = []
+    def Exercise_recommendation(self,previous_number, muscle):
         number = []
         
         for k in previous_number:
-            if self.Data.at[k, muscle] == considerations:
-                result.append(self.exercize_data[k])
+            if self.Data.at[k, muscle] == 9:
+                self.score[self.exercize_data[k]] += 3
                 number.append(k)
+
+            elif self.Data.at[k, muscle] == 5:
+                self.score[self.exercize_data[k]] += 2
+                number.append(k)
+
+            elif self.Data.at[k, muscle] == 3:
+                self.score[self.exercize_data[k]] += 1
+                number.append(k)
+
         
-        return result, number
+        return number
             
                         
                 
