@@ -1,51 +1,30 @@
-from turtle import clear
+from this import d
 import pandas as pd
 
 
 
-class Routine:
-    def __init__(self):
-        self.first_part = 0
-        self.second_part = 0
-        self.third_part = 0
-        self.part = ['등', '다리','허리', '손목']
-        self.body = ['대흉근', '승모근', '광배근', '견갑근', '전거근']
-        self.arm = ['이두근', ' 삼두근', '전완근', '상완근']
-        self.leg = ['허벅지', '대둔근', '햄스트링', '종아리']
-        self.waist = ['척추기립근','광배근']
-        self.A = ['대흉근', '삼각근', '전거근', '승모근', '광배근', '이두근', '견갑골', '허벅지', '코어', '대둔근', '허리', '종아리', '전완근', '상완근', '척추기립근', '능형근', '상완요골근', '손목']
-        self.score = {}
-        
-        
-    def enter_part(self):
-        # choice = int(input('원하는 부위를 팔등 부위로 입력하실려면 1을 입력하시고 근육이름으로 입력하실거면 2를 입력해주세요'))
-        
-        # if choice == 1:
-        #     print('부위는 등, 다리, 허리, 손목 있습니다.')
-        #     self.first_part, self.second_part, self.third_part = map(str, input('위에 부위 중에 운동을 하고싶은 부위를 세개 입력해주세요').split())
-        # elif choice == 2:
-        #     self.first_part, self.second_part, self.third_part = map(str, input('운동을 하고싶은 근육이름를 세개 입력해주세요').split())
-        
-        # self.first_part, self.second_part, self.third_part = map(str, input('운동을 하고싶은 근육이름를 세개 입력해주세요\n').split())
+class each_exercise:
+    def __init__(self, first, second, third):
+        self.first_part = first
+        self.second_part = second
+        self.third_part = third
 
-        self.first_part = '승모근'
-        self.second_part = '광배근'
-        self.third_part = '이두근'
+        self.score = {}
+
+        self.first_score = 5
+        self.second_score = 3
+        self.third_score = 1
         
     def exercizedata_load(self):
-        self.Data = pd.read_csv('./exersize.csv',encoding = 'CP949')
+        self.Data = pd.read_csv('./exercize.csv',encoding='CP949')
         self.exercize_data = self.Data['name']
 
         for k in self.exercize_data:
             self.score[k] = 0
-        
-        # for i in range(19):
-        #     self.score[self.exercize_data[i]] = 0
-            
-        # print(self.exercize_data)
-        # print(self.Data)
                 
-    def first_Exercise_recommendation(self):
+    def first_Exercise_recommendation(self):  
+        number = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19]
+
         first_result = {}
         first_number = []
 
@@ -55,88 +34,38 @@ class Routine:
         third_result = {}
         third_number = []
         
-        for i in range(len(self.exercize_data)):
-            if self.Data.at[i, self.first_part] == 9:
-                self.score[self.exercize_data[i]] += 3
-                first_number.append(i)
-            elif self.Data.at[i, self.first_part] == 5:
-                self.score[self.exercize_data[i]] += 2
-                first_number.append(i)
-            elif self.Data.at[i, self.first_part] == 3:
-                self.score[self.exercize_data[i]] += 1
-                first_number.append(i)
-        
+        first_number = self.Exercise_recommendation(number, self.first_part ,1)
+
         if len(first_number) > 0:
-            print("###############  1순위 근육을 고려했을때 추천되는 운동 #################")
-            print(self.score)
-            
-            first_second_number = self.Exercise_recommendation(first_number,self.second_part)
+            first_second_number = self.Exercise_recommendation(first_number,self.second_part, 2)
             
             if len(first_second_number) > 0:
-                print('###############  2순위 근육까지 고려했을때 추천되는 운동 #################')
-                print(self.score)
-                first_third_number = self.Exercise_recommendation(first_second_number,self.third_part)
+                first_third_number = self.Exercise_recommendation(first_second_number,self.third_part, 3)
                 
                 if len(self.score) > 0:
-                    print('###############  3순위 근육까지 고려했을때 추천되는 운동 #################')
-                    print(self.score)
-                
-                else:
-                    print('################# 3순위 운동까지 한번에 늘어나는 운동이 없습니다 #################')
-                
-            
-                
+                    self.output()
+                            
             else:
-                print('##### 두번째 입력하신 운동까지 한번에 늘어나는 운동이 없어서 세번째 입력하신 운동을 고려해보겠습니다. #####')
-                first_third_number = self.Exercise_recommendation(first_number,self.third_part)
+                first_third_number = self.Exercise_recommendation(first_number,self.third_part, 3)
                 
                 if len(first_third_number) > 0:
-                    print('###############  세번째 입력하신 근육을 고려했을때 추천되는 운동 #################')
-                    print(self.score)
-                    
-                else:
-                    print("##### 세번쨰 입력하신 근육까지 한번에 늘어나는 운동이 없습니다. #####")
-
+                    self.output()
+        
         elif len(first_result) == 0:
-            print('\n')
-            print('##### 1순위를 우선적으로 고려하는 운동이 없습니다. #####')
-            print('##### 1순위에없는 2순위 근육을 늘리는 운동으로 고려하겠습니다.')
-                
-            for i in range(len(self.exercize_data)):
-                if self.Data.at[i, self.second_part] == 5:
-                    self.score[self.exercize_data[i]] += 2
-                    second_number.append(i)
+            second_number = self.Exercise_recommendation(number, self.second_part, 2)
                     
             for j in second_number:
                 for k in first_number:
                     if j == k:
                         del_exercize = self.exercize_data[k]
-                        print(del_exercize)
+
                         del second_result[del_exercize]
                         second_number.remove(k)
 
             if len(second_result) > 0:
-                print("###############  2순위 근육을 고려했을때 추천되는 운동 #################")
-                print(second_result)
-                
-                second_second_number = self.Exercise_recommendation(second_number,self.third_part)
+                second_second_number = self.Exercise_recommendation(second_number,self.third_part, 3)
 
-                if len(second_second_number) > 0:
-                    print('###############  3순위 근육까지 고려했을때 추천되는 운동 #################')
-                    print(self.score)
-
-                else:
-                    print('같이 고려되는 운동이 없습니다.')
-
-            print('\n')
-            print('##### 1순위와 2순위에 없는 3순위 근육을 늘리는 운동으로 고려하겠습니다.')
-
-            for i in range(len(self.exercize_data)):
-                if self.Data.at[i, self.third_part] == 3:
-                    self.score[self.exercize_data[k]] += 1
-                    third_number.append(i)
-            
-            print(self.score)
+            third_number = self.Exercise_recommendation(number, self.third_part, 3)
 
             for j in third_number:
                 for k in second_number:
@@ -145,72 +74,66 @@ class Routine:
                         del(third_result[del_exercize])
                         third_number.remove(k)
 
-            print(self.score)
-        
-        
-    def Exercise_recommendation(self,previous_number, muscle):
+            return self.output()
+              
+    def Exercise_recommendation(self,previous_number, muscle, Ranking):
         number = []
+
+        if Ranking == 1:
+            for k in previous_number:
+                if self.Data.at[k, muscle] == 9:
+                    self.score[self.exercize_data[k]] += self.first_score + 4
+                    number.append(k)
+
+                elif self.Data.at[k, muscle] == 5:
+                    self.score[self.exercize_data[k]] += self.first_score + 3
+                    number.append(k)
+
+                elif self.Data.at[k, muscle] == 3:
+                    self.score[self.exercize_data[k]] += self.first_score + 1
+                    number.append(k)
         
-        for k in previous_number:
-            if self.Data.at[k, muscle] == 9:
-                self.score[self.exercize_data[k]] += 3
-                number.append(k)
+        elif Ranking == 2:
+             for k in previous_number:
+                if self.Data.at[k, muscle] == 9:
+                    self.score[self.exercize_data[k]] += self.second_score + 4
+                    number.append(k)
 
-            elif self.Data.at[k, muscle] == 5:
-                self.score[self.exercize_data[k]] += 2
-                number.append(k)
+                elif self.Data.at[k, muscle] == 5:
+                    self.score[self.exercize_data[k]] += self.second_score + 3
+                    number.append(k)
 
-            elif self.Data.at[k, muscle] == 3:
-                self.score[self.exercize_data[k]] += 1
-                number.append(k)
+                elif self.Data.at[k, muscle] == 3:
+                    self.score[self.exercize_data[k]] += self.second_score + 1
+                    number.append(k)
+
+        elif Ranking == 3:
+             for k in previous_number:
+                if self.Data.at[k, muscle] == 9:
+                    self.score[self.exercize_data[k]] += self.third_score + 4
+                    number.append(k)
+
+                elif self.Data.at[k, muscle] == 5:
+                    self.score[self.exercize_data[k]] += self.third_score + 3
+                    number.append(k)
+
+                elif self.Data.at[k, muscle] == 3:
+                    self.score[self.exercize_data[k]] += self.third_score + 1
+                    number.append(k)
 
         
         return number
-            
-                        
-                
+
+    def output(self):
+        output = []
+        self.score = sorted(self.score.items(), key=lambda x:x[1], reverse=True)
+        
+        for key, value in self.score:
+            if value > 0:    
+                output.append('{}-{}'.format(key, value))
+        
+        return output
+           
     def start(self):
         self.exercizedata_load()
-        self.enter_part()
-        self.first_Exercise_recommendation()
-        self.test()
-        
-    def test(self):
-        # first_result = []
-        # first_number = []
-        # result = []
-        
-        # for i in range(len(self.exercize_data)):
-        #     if self.Data.at[i, '1순위'] == self.first_part:
-        #         first_result.append(self.exercize_data[i])
-        #         first_number.append(i)
-
-        # for i in first_result:
-        #     self.score[i] = 90
-        
-        # for key, value in self.score.items():
-        #     if value == 90:    
-        #         result.append(key)
-
-        result = []
-        exercise = []
-        
-        for k in range(len(self.exercize_data)):
-            score = self.Data.at[k,self.first_part] + self.Data.at[k,self.second_part] + self.Data.at[k,self.third_part]
-            result.append(score)
-        
-        for i in self.exercize_data:
-            exercise.append(i)
-        
-        print('\n')
-        print('\n')
-        print(exercise)
-        print(result)
-
-        
-        
-        
-        
-        
-Routine_Recommendation = Routine()
-Routine_Recommendation.start()
+        return self.first_Exercise_recommendation()
