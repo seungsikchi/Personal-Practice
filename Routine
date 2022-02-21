@@ -1,4 +1,5 @@
 from this import d
+from turtle import clear
 import pandas as pd
 
 
@@ -26,7 +27,7 @@ class each_exercise:
         number = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19]
 
         first_result = {}
-        first_number = []
+        first_number = [    ]
 
         second_result = {}
         second_number = []
@@ -41,16 +42,13 @@ class each_exercise:
             
             if len(first_second_number) > 0:
                 first_third_number = self.Exercise_recommendation(first_second_number,self.third_part, 3)
-                
-                if len(self.score) > 0:
-                    self.output()
+    
                             
             else:
                 first_third_number = self.Exercise_recommendation(first_number,self.third_part, 3)
                 
-                if len(first_third_number) > 0:
-                    self.output()
         
+
         elif len(first_result) == 0:
             second_number = self.Exercise_recommendation(number, self.second_part, 2)
                     
@@ -73,8 +71,8 @@ class each_exercise:
                         del_exercize = self.exercize_data[k]
                         del(third_result[del_exercize])
                         third_number.remove(k)
-
-            return self.output()
+                
+        return self.output()
               
     def Exercise_recommendation(self,previous_number, muscle, Ranking):
         number = []
@@ -126,14 +124,18 @@ class each_exercise:
 
     def output(self):
         output = []
+        print("######")
         self.score = sorted(self.score.items(), key=lambda x:x[1], reverse=True)
         
         for key, value in self.score:
             if value > 0:    
                 output.append('{}-{}'.format(key, value))
-        
+        print(output)
         return output
            
     def start(self):
         self.exercizedata_load()
         return self.first_Exercise_recommendation()
+
+ad = each_exercise('승모근', '광배근', '이두근')
+ad.start()
