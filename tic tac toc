@@ -1,0 +1,84 @@
+import numpy as np
+
+print("컴퓨터는 0 인간은 X입니다.")
+print("누가 먼저 시작하시겠습니까")
+
+turn = int(input("플레이어가 먼저 시작하려면 1을 입력해주세요"))
+
+def check_win(turn):
+  count = 0
+  cross_1 = [[0,0], [1,1], [2,2]]
+  cross_2 = [[0,2], [1,1], [2.0]]
+  width_1 = [[0,0], [0,1], [0,3]]
+  width_2 = [[1,0], [1,1], [1,2]]
+  width_3 = [[2,0], [2,1], [2,2]]
+  length_1 = [[0,0], [0,1], [0,2]]
+  length_2 = [[1,0], [1,1], [1,2]]
+  length_3 = [[2,0], [2,1], [2,2]]
+
+  check_line = [cross_1, cross_2, width_1, width_2, width_3, length_1, length_2, length_3]
+
+  for i in check_line:
+    for j in i:
+      count = 0
+
+      if turn == 0:
+        check_location = np.where(board == '0')
+        if j == check_location:
+          print("1")
+          count += 1
+        if count == 3:
+          print("========== 컴퓨터의 승리입니다. ==========")
+      
+      else:
+        check_location = np.where(board == 'X')
+        if j == check_location:
+          print("1")
+          count += 1
+        if count == 3:
+          print("========== 플레이어의 승리입니다. =========")
+
+
+def act():
+  location = map(int, input("바꿀칸의 좌표를 입력해주세요").split())
+  location = list(location)
+  while True:
+    if board[location[0]-1, location[1]-1] == "0" or board[location[0]-1, location[1]-1] == "X":
+      print("그곳에는 놓을수 없습니다.")
+      location = map(int, input("바꿀칸의 좌표를 입력해주세요").split())
+      location = list(location)
+    else:
+      break
+      
+  return location
+  
+while win == 0:
+  print(board)
+  if turn == 1:
+    print("====== 플레이어 차례입니다.========")
+    location = act()
+    board[location[0]-1, location[1]-1] = "X"
+    check_win(1)
+    turn = 0
+  
+
+
+  elif turn == 0:
+    print("====== 컴퓨터의 차례입니다.========")
+    location = act()
+    board[location[0]-1, location[1]-1] = "0"
+    check_win(0)
+    turn = 1
+  
+count = 0
+
+check_location = np.where(board == 'X')
+
+# check_location = np.reshape(2,2)
+print(check_location.shape)
+
+if [0,0] == check_location:
+  print("1")
+  count += 1
+
+print(count)
