@@ -7,14 +7,16 @@ turn = int(input("플레이어가 먼저 시작하려면 1을 입력해주세요
 
 def check_win(turn):
   count = 0
+  win = 0
   cross_1 = [[0,0], [1,1], [2,2]]
   cross_2 = [[0,2], [1,1], [2.0]]
-  width_1 = [[0,0], [0,1], [0,3]]
+  width_1 = [[0,0], [0,1], [0,2]]
   width_2 = [[1,0], [1,1], [1,2]]
   width_3 = [[2,0], [2,1], [2,2]]
   length_1 = [[0,0], [0,1], [0,2]]
   length_2 = [[1,0], [1,1], [1,2]]
   length_3 = [[2,0], [2,1], [2,2]]
+
 
   check_line = [cross_1, cross_2, width_1, width_2, width_3, length_1, length_2, length_3]
 
@@ -23,20 +25,27 @@ def check_win(turn):
       count = 0
 
       if turn == 0:
-        check_location = np.where(board == '0')
-        if j == check_location:
-          print("1")
-          count += 1
+        check_location_x, check_location_y = np.where(board == '0')
+
+        for e in range(len(check_location_x)):
+          if board[check_location_x[e], check_location_y[e]] == "0":
+            count += 1
+
         if count == 3:
-          print("========== 컴퓨터의 승리입니다. ==========")
+          win = 1
+
       
       else:
-        check_location = np.where(board == 'X')
-        if j == check_location:
-          print("1")
-          count += 1
+        check_location_x, check_location_y = np.where(board == 'X')
+
+        for e in range(len(check_location_x)):
+          if board[check_location_x[e], check_location_y[e]] == "X":
+            count += 1
+
         if count == 3:
-          print("========== 플레이어의 승리입니다. =========")
+          win = 2
+
+  return win
 
 
 def act():
@@ -58,7 +67,11 @@ while win == 0:
     print("====== 플레이어 차례입니다.========")
     location = act()
     board[location[0]-1, location[1]-1] = "X"
-    check_win(1)
+    win = check_win(1)
+    if win == 2:
+      print("====== 플레이어의 승리입니다. ======")
+      print(board)
+      break
     turn = 0
   
 
@@ -67,18 +80,9 @@ while win == 0:
     print("====== 컴퓨터의 차례입니다.========")
     location = act()
     board[location[0]-1, location[1]-1] = "0"
-    check_win(0)
+    win = check_win(0)
+    if win == 1:
+      print("====== 컴퓨터의 승리입니다. ======")
+      print(board)
+      break
     turn = 1
-  
-count = 0
-
-check_location = np.where(board == 'X')
-
-# check_location = np.reshape(2,2)
-print(check_location.shape)
-
-if [0,0] == check_location:
-  print("1")
-  count += 1
-
-print(count)
