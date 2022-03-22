@@ -73,6 +73,8 @@ def act():
  
 def computer(board):
 
+  count = 0
+
   cross_1 = [[0,0], [1,1], [2,2]]
   cross_2 = [[0,2], [1,1], [2,0]]
   width_1 = [[0,0], [0,1], [0,2]]
@@ -84,7 +86,9 @@ def computer(board):
   check_line = [cross_1, cross_2, width_1, width_2, width_3, length_1, length_2, length_3]
 
   player_check_location_x, player_check_location_y = np.where(board == 'X')
-  
+
+  release = 0
+
   # warning = 0
 
   # 중간에 돌 놓기
@@ -93,37 +97,45 @@ def computer(board):
   
   
   else:
-    # 상대방이 이기는 수
     for i in check_line:
-      count = 0
-      warning = 0
-      for j in i:
-        for e in range(len(player_check_location_x)):
-          if j[0] == player_check_location_x[e] and j[1] == player_check_location_y[e]:
-            count = count + 1
-            print(count)
+        count = 0
+        warning = 0
+        for j in i:
+          for e in range(len(player_check_location_x)):
+            if j[0] == player_check_location_x[e] and j[1] == player_check_location_y[e]:
+              count = count + 1
 
-
-
-          if warning == 1:
-            if board[i[2][0], i[2][1]] == " ":
-              board[i[2][0], i[2][1]] = "0"
-              break
-            elif board[i[1][0], i[1][1]] == " ":
-              board[i[1][0], i[1][1]] = "0"
-              break
-            return board
-
-          elif count == 2:
-            warning = 1
-        
+    # 상대방이 이기는 수
+              if count == 2:
+                if board[i[1][0], i[1][1]] == " ":
+                  board[i[1][0], i[1][1]] = "0"
+                  release = 1
+                  break
+                elif board[i[2][0], i[2][1]] == " ":
+                  board[i[2][0], i[2][1]] = "0"
+                  release = 1
+                  break
+                  return board
+    
 
     # 이기는 선들을 탐색해서 이길 수 있는곳에 돌 놔두기
-    for i in check_line:
-      for j in i:
-        if board[j[0],j[1]] == ' ':
-          board[j[0], j[1]] = "0"
-          return board
+    if release == 0:
+      for i in check_line:
+        for j in i:
+          if board[j[0],j[1]] == ' ':
+            if board[i[0][0], i[0][1]] == "X":
+              break
+
+            elif board[i[1][0], i[1][1]] == "X":
+              break
+            
+            elif board[i[2][0], i[2][1]] == "X":
+              break
+            
+            else:
+              board[j[0],j[1]] = '0'
+            
+            return board
 
   return board
   
